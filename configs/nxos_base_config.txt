@@ -1,0 +1,51 @@
+!
+! NX-OS Base Configuration Template
+! Used for initial device provisioning via CML console
+!
+! Variables (replace before applying):
+!   ${HOSTNAME}     - Device hostname (e.g., Spine-1)
+!   ${MGMT_IP}      - Management IP address (e.g., 192.168.30.110)
+!   ${MGMT_MASK}    - Subnet mask (e.g., 24)
+!   ${GATEWAY}      - Default gateway (e.g., 192.168.30.4)
+!   ${USERNAME}     - Admin username (e.g., admin)
+!   ${PASSWORD}     - Admin password
+!
+
+configure terminal
+
+! Set hostname
+hostname ${HOSTNAME}
+
+! Configure management interface
+interface mgmt0
+  description Management Interface
+  ip address ${MGMT_IP}/${MGMT_MASK}
+  no shutdown
+exit
+
+! Configure management VRF routing
+vrf context management
+  ip route 0.0.0.0/0 ${GATEWAY}
+exit
+
+! Enable SSH
+feature ssh
+
+! Create admin user with full privileges
+username ${USERNAME} password ${PASSWORD} role network-admin
+
+! Optional: Enable useful features
+feature nxapi
+feature scp-server
+
+! Save configuration
+end
+copy running-config startup-config
+
+!
+! Verification Commands:
+!   show ip interface brief vrf management
+!   show ssh server
+!   show users
+!   show running-config
+!

@@ -1,0 +1,147 @@
+#!/usr/bin/expect -f
+#
+# Cisco CML Device Configuration Script
+# Configures NX-OS devices via CML console server
+#
+# Usage: ./config_device.exp <device-name> <ip-address>
+# Example: ./config_device.exp Spine-1 192.168.30.110
+#
+
+log_user 1
+set timeout 60
+
+# ============================================
+# CONFIGURATION - Update these values
+# ============================================
+set cml_host "192.168.20.65"
+set cml_user "admin"
+set cml_pass "YOUR_CML_PASSWORD"
+set lab_name "VXLAN_MANUAL"
+set gateway "192.168.30.4"
+set device_user "admin"
+set device_pass "YOUR_DEVICE_PASSWORD"
+# ============================================
+
+# Get arguments
+if {[llength $argv] != 2} {
+    puts "Usage: $argv0 <device-name> <ip-address>"
+    puts "Example: $argv0 Spine-1 192.168.30.110"
+    exit 1
+}
+
+set device [lindex $argv 0]
+set ip [lindex $argv 1]
+
+puts "============================================"
+puts "Configuring: $device"
+puts "IP Address:  $ip/24"
+puts "Gateway:     $gateway"
+puts "============================================"
+
+# Connect to CML console server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $cml_user@$cml_host
+expect {
+    "password:" {
+        send "$cml_pass\r"
+    }
+    timeout {
+        puts "ERROR: Connection timeout to CML server"
+        exit 1
+    }
+}
+
+expect "consoles>"
+
+# Open device console
+send "open /$lab_name/$device/0\r"
+expect {
+    "Escape character" {
+        # Connected successfully
+    }
+    "No such device" {
+        puts "ERROR: Device $device not found in lab $lab_name"
+        exit 1
+    }
+    timeout {
+        puts "ERROR: Timeout opening console"
+        exit 1
+    }
+}
+
+# Wake up the console
+sleep 2
+send "\r\r"
+sleep 2
+
+# Handle different login states
+expect {
+    "login:" {
+        send "admin\r"
+        expect "Password:"
+        send "cisco\r"
+        expect "#"
+    }
+    -re ".*#" {
+        # Already at privileged prompt
+    }
+    -re ".*>" {
+        send "enable\r"
+        expect "#"
+    }
+    timeout {
+        send "\r"
+        expect -re ".*"
+    }
+}
+
+sleep 1
+
+# Send configuration commands
+set commands {
+    "conf t"
+    "hostname $device"
+    "interface mgmt0"
+    "ip address $ip/24"
+    "no shutdown"
+    "exit"
+    "vrf context management"
+    "ip route 0.0.0.0/0 $gateway"
+    "exit"
+    "feature ssh"
+    "username $device_user password $device_pass role network-admin"
+    "end"
+}
+
+foreach cmd $commands {
+    # Substitute variables in command
+    set cmd [subst $cmd]
+    send "$cmd\r"
+    sleep 0.5
+    expect -re ".*"
+}
+
+# Save configuration
+send "copy running-config startup-config\r"
+expect {
+    "Copy complete" {
+        puts "\nConfiguration saved successfully!"
+    }
+    -re ".*#" {
+        # Some devices don't show "Copy complete"
+    }
+}
+
+sleep 2
+
+puts "\n============================================"
+puts "Configuration complete for $device"
+puts "SSH Access: ssh $device_user@$ip"
+puts "============================================"
+
+# Exit console (Ctrl+])
+send "\x1d"
+sleep 1
+expect -re ".*"
+send "exit\r"
+
+expect eof
