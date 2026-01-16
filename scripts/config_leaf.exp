@@ -1,0 +1,303 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 30
+
+set ip [lindex $argv 0]
+set leaf_num [lindex $argv 1]
+
+set asn [expr {65100 + $leaf_num}]
+
+puts "=== Configuring Leaf-$leaf_num ($ip) AS$asn ==="
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null admin@$ip
+expect -re "assword:"
+send "Versa@123!!\r"
+expect "#"
+
+send "conf t\r"
+expect "(config)#"
+
+# Features
+send "feature bgp\r"
+expect "(config)#"
+send "feature interface-vlan\r"
+expect "(config)#"
+send "feature vn-segment-vlan-based\r"
+expect "(config)#"
+send "feature nv overlay\r"
+expect "(config)#"
+send "nv overlay evpn\r"
+expect "(config)#"
+send "feature fabric forwarding\r"
+expect "(config)#"
+
+# Anycast Gateway MAC
+send "fabric forwarding anycast-gateway-mac 0000.1111.2222\r"
+expect "(config)#"
+
+# VRF Definition
+send "vrf context mylab\r"
+expect "(config-vrf)#"
+send "vni 50000\r"
+expect "(config-vrf)#"
+send "rd auto\r"
+expect "(config-vrf)#"
+send "address-family ipv4 unicast\r"
+expect "(config-vrf-af-ipv4)#"
+send "route-target both auto\r"
+expect "(config-vrf-af-ipv4)#"
+send "route-target both auto evpn\r"
+expect "(config-vrf-af-ipv4)#"
+send "exit\r"
+expect "(config-vrf)#"
+send "exit\r"
+expect "(config)#"
+
+# VLAN Definitions
+send "vlan 10\r"
+expect "(config-vlan)#"
+send "name VLAN10_Data\r"
+expect "(config-vlan)#"
+send "vn-segment 10010\r"
+expect "(config-vlan)#"
+send "exit\r"
+expect "(config)#"
+
+send "vlan 20\r"
+expect "(config-vlan)#"
+send "name VLAN20_Voice\r"
+expect "(config-vlan)#"
+send "vn-segment 10020\r"
+expect "(config-vlan)#"
+send "exit\r"
+expect "(config)#"
+
+send "vlan 30\r"
+expect "(config-vlan)#"
+send "name VLAN30_Management\r"
+expect "(config-vlan)#"
+send "vn-segment 10030\r"
+expect "(config-vlan)#"
+send "exit\r"
+expect "(config)#"
+
+send "vlan 40\r"
+expect "(config-vlan)#"
+send "name VLAN40_Guest\r"
+expect "(config-vlan)#"
+send "vn-segment 10040\r"
+expect "(config-vlan)#"
+send "exit\r"
+expect "(config)#"
+
+send "vlan 100\r"
+expect "(config-vlan)#"
+send "name L3VNI_mylab\r"
+expect "(config-vlan)#"
+send "vn-segment 50000\r"
+expect "(config-vlan)#"
+send "exit\r"
+expect "(config)#"
+
+# Loopbacks
+send "interface loopback0\r"
+expect "(config-if)#"
+send "description BGP Router-ID\r"
+expect "(config-if)#"
+send "ip address 10.0.2.$leaf_num/32\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+send "interface loopback1\r"
+expect "(config-if)#"
+send "description VTEP Source\r"
+expect "(config-if)#"
+send "ip address 10.0.2.$leaf_num/32\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# SVI for L3VNI
+send "interface Vlan100\r"
+expect "(config-if)#"
+send "description L3VNI for VRF mylab\r"
+expect "(config-if)#"
+send "no shutdown\r"
+expect "(config-if)#"
+send "vrf member mylab\r"
+expect "(config-if)#"
+send "ip forward\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# SVIs with Anycast Gateway
+foreach vlan {10 20 30 40} {
+    send "interface Vlan$vlan\r"
+    expect "(config-if)#"
+    send "description VLAN $vlan - Anycast Gateway\r"
+    expect "(config-if)#"
+    send "no shutdown\r"
+    expect "(config-if)#"
+    send "vrf member mylab\r"
+    expect "(config-if)#"
+    send "ip address 192.168.$vlan.1/24\r"
+    expect "(config-if)#"
+    send "fabric forwarding mode anycast-gateway\r"
+    expect "(config-if)#"
+    send "exit\r"
+    expect "(config)#"
+}
+
+# NVE Interface (VTEP)
+send "interface nve1\r"
+expect "(config-if-nve)#"
+send "no shutdown\r"
+expect "(config-if-nve)#"
+send "host-reachability protocol bgp\r"
+expect "(config-if-nve)#"
+send "source-interface loopback1\r"
+expect "(config-if-nve)#"
+
+foreach vni {10010 10020 10030 10040} {
+    send "member vni $vni\r"
+    expect "(config-if-nve-vni)#"
+    send "suppress-arp\r"
+    expect "(config-if-nve-vni)#"
+    send "ingress-replication protocol bgp\r"
+    expect "(config-if-nve-vni)#"
+    send "exit\r"
+    expect "(config-if-nve)#"
+}
+
+send "member vni 50000 associate-vrf\r"
+expect "(config-if-nve)#"
+send "exit\r"
+expect "(config)#"
+
+# Uplinks to Spines E1/1 to E1/4
+for {set i 1} {$i <= 4} {incr i} {
+    send "interface Ethernet1/$i\r"
+    expect "(config-if)#"
+    send "description To Spine-$i\r"
+    expect "(config-if)#"
+    send "no switchport\r"
+    expect "(config-if)#"
+    send "mtu 9216\r"
+    expect "(config-if)#"
+    # IP: 10.2.{spine_num}.{(leaf-1)*2 + 1}/31
+    set leaf_ip [expr {($leaf_num - 1) * 2 + 1}]
+    send "ip address 10.2.$i.$leaf_ip/31\r"
+    expect "(config-if)#"
+    send "no shutdown\r"
+    expect "(config-if)#"
+    send "exit\r"
+    expect "(config)#"
+}
+
+# Route-map
+send "route-map PERMIT-ALL permit 10\r"
+expect "(config-route-map)#"
+send "exit\r"
+expect "(config)#"
+
+# BGP Configuration
+send "router bgp $asn\r"
+expect "(config-router)#"
+send "router-id 10.0.2.$leaf_num\r"
+expect "(config-router)#"
+send "bestpath as-path multipath-relax\r"
+expect "(config-router)#"
+send "log-neighbor-changes\r"
+expect "(config-router)#"
+
+send "address-family ipv4 unicast\r"
+expect "(config-router-af)#"
+send "redistribute direct route-map PERMIT-ALL\r"
+expect "(config-router-af)#"
+send "maximum-paths 64\r"
+expect "(config-router-af)#"
+send "exit\r"
+expect "(config-router)#"
+
+send "address-family l2vpn evpn\r"
+expect "(config-router-af)#"
+send "exit\r"
+expect "(config-router)#"
+
+# VRF mylab BGP
+send "vrf mylab\r"
+expect "(config-router-vrf)#"
+send "address-family ipv4 unicast\r"
+expect "(config-router-vrf-af)#"
+send "advertise l2vpn evpn\r"
+expect "(config-router-vrf-af)#"
+send "redistribute direct route-map PERMIT-ALL\r"
+expect "(config-router-vrf-af)#"
+send "maximum-paths 64\r"
+expect "(config-router-vrf-af)#"
+send "exit\r"
+expect "(config-router-vrf)#"
+send "exit\r"
+expect "(config-router)#"
+
+# Neighbors - Spines
+for {set i 1} {$i <= 4} {incr i} {
+    set spine_asn [expr {65000 + $i}]
+    set spine_ip [expr {($leaf_num - 1) * 2}]
+    send "neighbor 10.2.$i.$spine_ip\r"
+    expect "(config-router-neighbor)#"
+    send "remote-as $spine_asn\r"
+    expect "(config-router-neighbor)#"
+    send "description Spine-$i\r"
+    expect "(config-router-neighbor)#"
+    send "address-family ipv4 unicast\r"
+    expect "(config-router-neighbor-af)#"
+    send "exit\r"
+    expect "(config-router-neighbor)#"
+    send "address-family l2vpn evpn\r"
+    expect "(config-router-neighbor-af)#"
+    send "send-community extended\r"
+    expect "(config-router-neighbor-af)#"
+    send "exit\r"
+    expect "(config-router-neighbor)#"
+    send "exit\r"
+    expect "(config-router)#"
+}
+
+send "exit\r"
+expect "(config)#"
+
+# EVPN Configuration
+send "evpn\r"
+expect "(config-evpn)#"
+foreach vni {10010 10020 10030 10040} {
+    send "vni $vni l2\r"
+    expect "(config-evpn-evi)#"
+    send "rd auto\r"
+    expect "(config-evpn-evi)#"
+    send "route-target import auto\r"
+    expect "(config-evpn-evi)#"
+    send "route-target export auto\r"
+    expect "(config-evpn-evi)#"
+    send "exit\r"
+    expect "(config-evpn)#"
+}
+send "exit\r"
+expect "(config)#"
+
+send "end\r"
+expect "#"
+
+send "copy run start\r"
+expect {
+    "Copy complete" { }
+    -re "\\?" { send "\r" }
+}
+sleep 3
+expect "#"
+
+puts "\n=== Leaf-$leaf_num configured! ==="
+send "exit\r"
+expect eof

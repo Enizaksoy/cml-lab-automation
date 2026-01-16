@@ -1,6 +1,6 @@
 # Cisco CML Lab Automation with AI
 
-Automate Cisco Modeling Labs (CML) device configuration using AI tools (Claude). This project demonstrates how to programmatically configure NX-OS 9000v switches in a VXLAN EVPN spine-leaf topology.
+Automate Cisco Modeling Labs (CML) device configuration using AI tools (Claude). This project demonstrates how to programmatically configure NX-OS 9000v switches in a **BGP EVPN VXLAN** spine-leaf topology.
 
 ![Lab Topology](images/cml_topology.jpg)
 
@@ -9,6 +9,7 @@ Automate Cisco Modeling Labs (CML) device configuration using AI tools (Claude).
 This repository contains scripts and documentation for:
 - Accessing Cisco CML via API and console
 - Automated NX-OS device configuration (hostname, management IP, SSH, users)
+- **BGP EVPN VXLAN fabric configuration** (3-tier Clos topology)
 - MobaXterm session management
 - Expect scripts for bulk device provisioning
 
@@ -16,18 +17,52 @@ This repository contains scripts and documentation for:
 
 **Architecture:** 3-Tier Clos (Super-Spine / Spine / Leaf)
 
-| Device | Role | Management IP |
-|--------|------|---------------|
-| Super-Spine-1 | Super Spine | 192.168.30.118 |
-| Super-Spine-2 | Super Spine | 192.168.30.119 |
-| Spine-1 | Spine | 192.168.30.110 |
-| Spine-2 | Spine | 192.168.30.111 |
-| Spine-3 | Spine | 192.168.30.112 |
-| Spine-4 | Spine | 192.168.30.113 |
-| Leaf-1 | Leaf | 192.168.30.114 |
-| Leaf-2 | Leaf | 192.168.30.115 |
-| Leaf-3 | Leaf | 192.168.30.116 |
-| Leaf-4 | Leaf | 192.168.30.117 |
+| Device | Role | Management IP | BGP AS |
+|--------|------|---------------|--------|
+| Super-Spine-1 | Route Reflector | 192.168.30.118 | 65000 |
+| Super-Spine-2 | Route Reflector | 192.168.30.119 | 65000 |
+| Spine-1 | Aggregation | 192.168.30.110 | 65001 |
+| Spine-2 | Aggregation | 192.168.30.111 | 65002 |
+| Spine-3 | Aggregation | 192.168.30.112 | 65003 |
+| Spine-4 | Aggregation | 192.168.30.113 | 65004 |
+| Leaf-1 | VTEP | 192.168.30.114 | 65101 |
+| Leaf-2 | VTEP | 192.168.30.115 | 65102 |
+| Leaf-3 | VTEP | 192.168.30.116 | 65103 |
+| Leaf-4 | VTEP | 192.168.30.117 | 65104 |
+
+## BGP EVPN VXLAN Design
+
+### IP Addressing Scheme
+
+| Network | Range | Purpose |
+|---------|-------|---------|
+| Super-Spine Loopbacks | 10.0.0.x/32 | BGP Router-ID |
+| Spine Loopbacks | 10.0.1.x/32 | BGP Router-ID |
+| Leaf Loopbacks | 10.0.2.x/32 | BGP Router-ID & VTEP Source |
+| SS-Spine Links | 10.1.1.x/31 | Point-to-Point |
+| Spine-Leaf Links | 10.2.x.y/31 | Point-to-Point |
+| VLAN 10 | 192.168.10.0/24 | Data Network |
+| VLAN 20 | 192.168.20.0/24 | Voice Network |
+| VLAN 30 | 192.168.30.0/24 | Management Network |
+| VLAN 40 | 192.168.40.0/24 | Guest Network |
+
+### VNI Mapping
+
+| VLAN | VNI | Purpose |
+|------|-----|---------|
+| 10 | 10010 | Data (L2VNI) |
+| 20 | 10020 | Voice (L2VNI) |
+| 30 | 10030 | Management (L2VNI) |
+| 40 | 10040 | Guest (L2VNI) |
+| 100 | 50000 | VRF mylab (L3VNI) |
+
+### Key Features
+
+- **eBGP Underlay:** Unique ASN per device for multipath
+- **eBGP EVPN Overlay:** L2VPN EVPN address-family
+- **Anycast Gateway:** Same IP (192.168.x.1) and MAC (0000.1111.2222) on all Leafs
+- **VRF:** `mylab` with L3VNI for inter-VLAN routing
+- **Ingress Replication:** BGP-based for BUM traffic
 
 ## Quick Start
 
@@ -43,26 +78,33 @@ git clone https://github.com/Enizaksoy/cml-lab-automation.git
 cd cml-lab-automation
 ```
 
-### 2. Configure Variables
-Edit `scripts/config_device.exp` and update:
-```tcl
-# CML Server
-set cml_host "192.168.20.65"
-set cml_user "admin"
-set cml_pass "your-cml-password"
+### 2. Apply BGP EVPN VXLAN Configuration
 
-# Device credentials to create
-set device_user "admin"
-set device_pass "your-device-password"
+```bash
+# Configure Super-Spines
+./scripts/config_superspine.exp 192.168.30.118 1
+./scripts/config_superspine.exp 192.168.30.119 2
+
+# Configure Spines
+./scripts/config_spine.exp 192.168.30.110 1
+./scripts/config_spine.exp 192.168.30.111 2
+./scripts/config_spine.exp 192.168.30.112 3
+./scripts/config_spine.exp 192.168.30.113 4
+
+# Configure Leafs
+./scripts/config_leaf.exp 192.168.30.114 1
+./scripts/config_leaf.exp 192.168.30.115 2
+./scripts/config_leaf.exp 192.168.30.116 3
+./scripts/config_leaf.exp 192.168.30.117 4
 ```
 
-### 3. Run Automation
+### 3. Verify Configuration
 ```bash
-# Configure a single device
-./scripts/config_device.exp Spine-1 192.168.30.110
-
-# Configure all devices
-./scripts/configure_all.sh
+# On any device
+show bgp l2vpn evpn summary
+show nve peers
+show nve vni
+show vxlan
 ```
 
 ## Project Structure
@@ -71,67 +113,98 @@ set device_pass "your-device-password"
 cml-lab-automation/
 ├── README.md
 ├── images/
-│   └── cml_topology.jpg
+│   ├── cml_topology.jpg
+│   └── mobaxterm_sessions.jpg
 ├── scripts/
-│   ├── config_device.exp      # Expect script for single device
-│   └── configure_all.sh       # Batch configuration script
+│   ├── config_superspine.exp    # Super-Spine BGP EVPN config
+│   ├── config_spine.exp         # Spine BGP EVPN config
+│   └── config_leaf.exp          # Leaf VTEP/VXLAN config
 ├── configs/
-│   └── nxos_base_config.txt   # NX-OS configuration template
+│   ├── 00_design_overview.md    # Design documentation
+│   ├── Super-Spine-1.cfg        # Super-Spine-1 configuration
+│   ├── Super-Spine-2.cfg        # Super-Spine-2 configuration
+│   ├── Spine-1.cfg              # Spine-1 configuration
+│   ├── Spine-2.cfg              # Spine-2 configuration
+│   ├── Spine-3.cfg              # Spine-3 configuration
+│   ├── Spine-4.cfg              # Spine-4 configuration
+│   ├── Leaf-1.cfg               # Leaf-1 configuration
+│   ├── Leaf-2.cfg               # Leaf-2 configuration
+│   ├── Leaf-3.cfg               # Leaf-3 configuration
+│   └── Leaf-4.cfg               # Leaf-4 configuration
+├── verification/
+│   └── BGP_EVPN_VXLAN_Verification.md  # Show command outputs
 └── docs/
-    └── mobaxterm_setup.md     # MobaXterm configuration guide
+    └── mobaxterm_setup.md       # MobaXterm configuration guide
 ```
 
-## How It Works
+## Configuration Verification
 
-### Step 1: Connect to CML Console Server
-```bash
-ssh admin@192.168.20.65
-# At consoles> prompt:
-open /LAB_NAME/DEVICE_NAME/0
+### Super-Spine-1 BGP Configuration
+```
+Super-Spine-1# show running-config bgp
+
+router bgp 65000
+  router-id 10.0.0.1
+  bestpath as-path multipath-relax
+  address-family l2vpn evpn
+    retain route-target all
+  neighbor 10.1.1.1
+    remote-as 65001
+    description Spine-1
+    address-family l2vpn evpn
+      send-community extended
+      route-map UNCHANGED out
 ```
 
-### Step 2: Apply Configuration
-The expect script sends these commands to each NX-OS device:
+### Leaf-1 VXLAN Configuration
 ```
-configure terminal
-hostname <device-name>
-interface mgmt0
-  ip address <ip>/24
-  no shutdown
-vrf context management
-  ip route 0.0.0.0/0 <gateway>
-feature ssh
-username admin password <password> role network-admin
-end
-copy running-config startup-config
+Leaf-1# show nve vni
+
+Interface VNI      Multicast-group   State Mode Type [BD/VRF]
+--------- -------- ----------------- ----- ---- ------------------
+nve1      10010    UnicastBGP        Down  CP   L2 [10]
+nve1      10020    UnicastBGP        Down  CP   L2 [20]
+nve1      10030    UnicastBGP        Down  CP   L2 [30]
+nve1      10040    UnicastBGP        Down  CP   L2 [40]
+nve1      50000    n/a               Down  CP   L3 [mylab]
 ```
 
-### Step 3: Verify Access
-```bash
-ssh admin@192.168.30.110
-# Password: <configured-password>
+### Leaf-1 VLAN to VNI Mapping
+```
+Leaf-1# show vxlan
+
+Vlan            VN-Segment
+====            ==========
+10              10010
+20              10020
+30              10030
+40              10040
+100             50000
 ```
 
-## CML API Reference
+> **Note:** VNI state shows "Down" because physical links are not yet connected in CML. Once links are created, BGP will establish and VNIs will come up.
 
-### Authentication
-```bash
-TOKEN=$(curl -sk -X POST https://<CML_IP>/api/v0/authenticate \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"<password>"}' | tr -d '"')
-```
+## CML Topology Links Required
 
-### List Labs
-```bash
-curl -sk https://<CML_IP>/api/v0/labs \
-  -H "Authorization: Bearer $TOKEN"
-```
+### Super-Spine to Spine
+| From | Interface | To | Interface |
+|------|-----------|-----|-----------|
+| Super-Spine-1 | E1/1 | Spine-1 | E1/5 |
+| Super-Spine-1 | E1/2 | Spine-2 | E1/5 |
+| Super-Spine-1 | E1/3 | Spine-3 | E1/5 |
+| Super-Spine-1 | E1/4 | Spine-4 | E1/5 |
+| Super-Spine-2 | E1/1 | Spine-1 | E1/6 |
+| Super-Spine-2 | E1/2 | Spine-2 | E1/6 |
+| Super-Spine-2 | E1/3 | Spine-3 | E1/6 |
+| Super-Spine-2 | E1/4 | Spine-4 | E1/6 |
 
-### Get Lab Nodes
-```bash
-curl -sk https://<CML_IP>/api/v0/labs/<LAB_ID>/nodes \
-  -H "Authorization: Bearer $TOKEN"
-```
+### Spine to Leaf
+| From | Interface | To | Interface |
+|------|-----------|-----|-----------|
+| Spine-X | E1/1 | Leaf-1 | E1/X |
+| Spine-X | E1/2 | Leaf-2 | E1/X |
+| Spine-X | E1/3 | Leaf-3 | E1/X |
+| Spine-X | E1/4 | Leaf-4 | E1/X |
 
 ## MobaXterm Integration
 
@@ -159,24 +232,26 @@ This workflow was created using Claude (AI assistant). To replicate for your own
 3. IP Range: Management IPs for devices (e.g., 192.168.30.110-120)
 4. Gateway: Default gateway for management VRF
 5. Device Credentials: Username/password to create on devices
+6. Fabric Design: VRF name, VLANs, anycast gateway IPs
 ```
 
 ### Example AI Prompt:
 ```
-Configure my CML lab "DATACENTER_LAB" at 192.168.20.65 (admin/mypassword).
-- Assign management IPs 10.0.0.10-25 with gateway 10.0.0.1
-- Create user "netops" with password "SecurePass123!"
-- Add SSH sessions to MobaXterm under "DC_Switches" folder
+Configure my CML lab "VXLAN_MANUAL" with BGP EVPN VXLAN:
+- 2 Super-Spines, 4 Spines, 4 Leafs
+- VRF "mylab" with VLANs 10, 20, 30, 40
+- Anycast gateway on leaf switches
+- eBGP underlay with unique ASN per device
 ```
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
+| BGP neighbors in Idle state | Verify physical links are connected in CML topology |
 | Cannot SSH to device | Verify device is BOOTED in CML, check `show ip int brief vrf management` |
-| Expect script timeout | Increase timeout value, check CML console connectivity |
-| MobaXterm sessions missing | Ensure MobaXterm was closed before editing INI file |
-| Authentication failed | Verify credentials, check if user was created with correct role |
+| NVE VNI showing Down | BGP neighbors not established, check underlay connectivity |
+| EVPN routes missing | Verify `nv overlay evpn` feature is enabled |
 
 ## Contributing
 
@@ -196,4 +271,4 @@ Created by [Enizaksoy](https://github.com/Enizaksoy) using Claude AI for network
 
 ---
 
-**Keywords:** Cisco CML, Network Automation, NX-OS, VXLAN EVPN, Spine-Leaf, Infrastructure as Code, AI-Assisted Automation
+**Keywords:** Cisco CML, Network Automation, NX-OS, VXLAN EVPN, BGP, Spine-Leaf, Anycast Gateway, VTEP, Infrastructure as Code, AI-Assisted Automation

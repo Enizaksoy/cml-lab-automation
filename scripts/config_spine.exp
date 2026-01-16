@@ -1,0 +1,217 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 30
+
+set ip [lindex $argv 0]
+set spine_num [lindex $argv 1]
+
+set asn [expr {65000 + $spine_num}]
+
+puts "=== Configuring Spine-$spine_num ($ip) AS$asn ==="
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null admin@$ip
+expect -re "assword:"
+send "Versa@123!!\r"
+expect "#"
+
+send "conf t\r"
+expect "(config)#"
+
+# Features
+send "feature bgp\r"
+expect "(config)#"
+send "feature interface-vlan\r"
+expect "(config)#"
+send "feature nv overlay\r"
+expect "(config)#"
+send "nv overlay evpn\r"
+expect "(config)#"
+
+# Loopback
+send "interface loopback0\r"
+expect "(config-if)#"
+send "ip address 10.0.1.$spine_num/32\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# Interfaces to Leafs E1/1 to E1/4
+for {set i 1} {$i <= 4} {incr i} {
+    send "interface Ethernet1/$i\r"
+    expect "(config-if)#"
+    send "description To Leaf-$i\r"
+    expect "(config-if)#"
+    send "no switchport\r"
+    expect "(config-if)#"
+    send "mtu 9216\r"
+    expect "(config-if)#"
+    # IP: 10.2.{spine_num}.{(leaf-1)*2} /31
+    set leaf_ip [expr {($i - 1) * 2}]
+    send "ip address 10.2.$spine_num.$leaf_ip/31\r"
+    expect "(config-if)#"
+    send "no shutdown\r"
+    expect "(config-if)#"
+    send "exit\r"
+    expect "(config)#"
+}
+
+# E1/5 to Super-Spine-1
+send "interface Ethernet1/5\r"
+expect "(config-if)#"
+send "description To Super-Spine-1\r"
+expect "(config-if)#"
+send "no switchport\r"
+expect "(config-if)#"
+send "mtu 9216\r"
+expect "(config-if)#"
+# IP: 10.1.1.{(spine-1)*2 + 1}/31
+set ss1_ip [expr {($spine_num - 1) * 2 + 1}]
+send "ip address 10.1.1.$ss1_ip/31\r"
+expect "(config-if)#"
+send "no shutdown\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# E1/6 to Super-Spine-2
+send "interface Ethernet1/6\r"
+expect "(config-if)#"
+send "description To Super-Spine-2\r"
+expect "(config-if)#"
+send "no switchport\r"
+expect "(config-if)#"
+send "mtu 9216\r"
+expect "(config-if)#"
+# IP: 10.1.1.{8 + (spine-1)*2 + 1}/31
+set ss2_ip [expr {8 + ($spine_num - 1) * 2 + 1}]
+send "ip address 10.1.1.$ss2_ip/31\r"
+expect "(config-if)#"
+send "no shutdown\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# Route-maps
+send "route-map PERMIT-ALL permit 10\r"
+expect "(config-route-map)#"
+send "exit\r"
+expect "(config)#"
+
+send "route-map UNCHANGED permit 10\r"
+expect "(config-route-map)#"
+send "set ip next-hop unchanged\r"
+expect "(config-route-map)#"
+send "exit\r"
+expect "(config)#"
+
+# BGP Configuration
+send "router bgp $asn\r"
+expect "(config-router)#"
+send "router-id 10.0.1.$spine_num\r"
+expect "(config-router)#"
+send "bestpath as-path multipath-relax\r"
+expect "(config-router)#"
+send "log-neighbor-changes\r"
+expect "(config-router)#"
+
+send "address-family ipv4 unicast\r"
+expect "(config-router-af)#"
+send "redistribute direct route-map PERMIT-ALL\r"
+expect "(config-router-af)#"
+send "maximum-paths 64\r"
+expect "(config-router-af)#"
+send "exit\r"
+expect "(config-router)#"
+
+send "address-family l2vpn evpn\r"
+expect "(config-router-af)#"
+send "retain route-target all\r"
+expect "(config-router-af)#"
+send "exit\r"
+expect "(config-router)#"
+
+# Neighbors - Leafs
+for {set i 1} {$i <= 4} {incr i} {
+    set leaf_asn [expr {65100 + $i}]
+    set leaf_neighbor_ip [expr {($i - 1) * 2 + 1}]
+    send "neighbor 10.2.$spine_num.$leaf_neighbor_ip\r"
+    expect "(config-router-neighbor)#"
+    send "remote-as $leaf_asn\r"
+    expect "(config-router-neighbor)#"
+    send "description Leaf-$i\r"
+    expect "(config-router-neighbor)#"
+    send "address-family ipv4 unicast\r"
+    expect "(config-router-neighbor-af)#"
+    send "exit\r"
+    expect "(config-router-neighbor)#"
+    send "address-family l2vpn evpn\r"
+    expect "(config-router-neighbor-af)#"
+    send "send-community extended\r"
+    expect "(config-router-neighbor-af)#"
+    send "route-map UNCHANGED out\r"
+    expect "(config-router-neighbor-af)#"
+    send "exit\r"
+    expect "(config-router-neighbor)#"
+    send "exit\r"
+    expect "(config-router)#"
+}
+
+# Neighbor Super-Spine-1
+set ss1_neighbor [expr {($spine_num - 1) * 2}]
+send "neighbor 10.1.1.$ss1_neighbor\r"
+expect "(config-router-neighbor)#"
+send "remote-as 65000\r"
+expect "(config-router-neighbor)#"
+send "description Super-Spine-1\r"
+expect "(config-router-neighbor)#"
+send "address-family ipv4 unicast\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "address-family l2vpn evpn\r"
+expect "(config-router-neighbor-af)#"
+send "send-community extended\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "exit\r"
+expect "(config-router)#"
+
+# Neighbor Super-Spine-2
+set ss2_neighbor [expr {8 + ($spine_num - 1) * 2}]
+send "neighbor 10.1.1.$ss2_neighbor\r"
+expect "(config-router-neighbor)#"
+send "remote-as 65000\r"
+expect "(config-router-neighbor)#"
+send "description Super-Spine-2\r"
+expect "(config-router-neighbor)#"
+send "address-family ipv4 unicast\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "address-family l2vpn evpn\r"
+expect "(config-router-neighbor-af)#"
+send "send-community extended\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "exit\r"
+expect "(config-router)#"
+
+send "exit\r"
+expect "(config)#"
+
+send "end\r"
+expect "#"
+
+send "copy run start\r"
+expect {
+    "Copy complete" { }
+    -re "\\?" { send "\r" }
+}
+sleep 3
+expect "#"
+
+puts "\n=== Spine-$spine_num configured! ==="
+send "exit\r"
+expect eof

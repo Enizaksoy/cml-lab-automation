@@ -1,0 +1,243 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 30
+
+set ip [lindex $argv 0]
+set ss_num [lindex $argv 1]
+
+puts "=== Configuring Super-Spine-$ss_num ($ip) ==="
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null admin@$ip
+expect -re "assword:"
+send "Versa@123!!\r"
+expect "#"
+
+send "conf t\r"
+expect "(config)#"
+
+# Features
+send "feature bgp\r"
+expect "(config)#"
+send "feature interface-vlan\r"
+expect "(config)#"
+send "feature nv overlay\r"
+expect "(config)#"
+send "nv overlay evpn\r"
+expect "(config)#"
+
+# Loopback
+send "interface loopback0\r"
+expect "(config-if)#"
+send "ip address 10.0.0.$ss_num/32\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# Interfaces to Spines - E1/1 to Spine-1
+send "interface Ethernet1/1\r"
+expect "(config-if)#"
+send "no switchport\r"
+expect "(config-if)#"
+send "mtu 9216\r"
+expect "(config-if)#"
+set e1_ip [expr {($ss_num - 1) * 8}]
+send "ip address 10.1.1.$e1_ip/31\r"
+expect "(config-if)#"
+send "no shutdown\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# E1/2 to Spine-2
+send "interface Ethernet1/2\r"
+expect "(config-if)#"
+send "no switchport\r"
+expect "(config-if)#"
+send "mtu 9216\r"
+expect "(config-if)#"
+set e2_ip [expr {($ss_num - 1) * 8 + 2}]
+send "ip address 10.1.1.$e2_ip/31\r"
+expect "(config-if)#"
+send "no shutdown\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# E1/3 to Spine-3
+send "interface Ethernet1/3\r"
+expect "(config-if)#"
+send "no switchport\r"
+expect "(config-if)#"
+send "mtu 9216\r"
+expect "(config-if)#"
+set e3_ip [expr {($ss_num - 1) * 8 + 4}]
+send "ip address 10.1.1.$e3_ip/31\r"
+expect "(config-if)#"
+send "no shutdown\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# E1/4 to Spine-4
+send "interface Ethernet1/4\r"
+expect "(config-if)#"
+send "no switchport\r"
+expect "(config-if)#"
+send "mtu 9216\r"
+expect "(config-if)#"
+set e4_ip [expr {($ss_num - 1) * 8 + 6}]
+send "ip address 10.1.1.$e4_ip/31\r"
+expect "(config-if)#"
+send "no shutdown\r"
+expect "(config-if)#"
+send "exit\r"
+expect "(config)#"
+
+# Route-maps
+send "route-map PERMIT-ALL permit 10\r"
+expect "(config-route-map)#"
+send "exit\r"
+expect "(config)#"
+
+send "route-map UNCHANGED permit 10\r"
+expect "(config-route-map)#"
+send "set ip next-hop unchanged\r"
+expect "(config-route-map)#"
+send "exit\r"
+expect "(config)#"
+
+# BGP Configuration
+send "router bgp 65000\r"
+expect "(config-router)#"
+send "router-id 10.0.0.$ss_num\r"
+expect "(config-router)#"
+send "bestpath as-path multipath-relax\r"
+expect "(config-router)#"
+send "log-neighbor-changes\r"
+expect "(config-router)#"
+
+send "address-family ipv4 unicast\r"
+expect "(config-router-af)#"
+send "redistribute direct route-map PERMIT-ALL\r"
+expect "(config-router-af)#"
+send "maximum-paths 64\r"
+expect "(config-router-af)#"
+send "exit\r"
+expect "(config-router)#"
+
+send "address-family l2vpn evpn\r"
+expect "(config-router-af)#"
+send "retain route-target all\r"
+expect "(config-router-af)#"
+send "exit\r"
+expect "(config-router)#"
+
+# Neighbors - Spine-1
+set n1_ip [expr {($ss_num - 1) * 8 + 1}]
+send "neighbor 10.1.1.$n1_ip\r"
+expect "(config-router-neighbor)#"
+send "remote-as 65001\r"
+expect "(config-router-neighbor)#"
+send "description Spine-1\r"
+expect "(config-router-neighbor)#"
+send "address-family ipv4 unicast\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "address-family l2vpn evpn\r"
+expect "(config-router-neighbor-af)#"
+send "send-community extended\r"
+expect "(config-router-neighbor-af)#"
+send "route-map UNCHANGED out\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "exit\r"
+expect "(config-router)#"
+
+# Neighbor Spine-2
+set n2_ip [expr {($ss_num - 1) * 8 + 3}]
+send "neighbor 10.1.1.$n2_ip\r"
+expect "(config-router-neighbor)#"
+send "remote-as 65002\r"
+expect "(config-router-neighbor)#"
+send "description Spine-2\r"
+expect "(config-router-neighbor)#"
+send "address-family ipv4 unicast\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "address-family l2vpn evpn\r"
+expect "(config-router-neighbor-af)#"
+send "send-community extended\r"
+expect "(config-router-neighbor-af)#"
+send "route-map UNCHANGED out\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "exit\r"
+expect "(config-router)#"
+
+# Neighbor Spine-3
+set n3_ip [expr {($ss_num - 1) * 8 + 5}]
+send "neighbor 10.1.1.$n3_ip\r"
+expect "(config-router-neighbor)#"
+send "remote-as 65003\r"
+expect "(config-router-neighbor)#"
+send "description Spine-3\r"
+expect "(config-router-neighbor)#"
+send "address-family ipv4 unicast\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "address-family l2vpn evpn\r"
+expect "(config-router-neighbor-af)#"
+send "send-community extended\r"
+expect "(config-router-neighbor-af)#"
+send "route-map UNCHANGED out\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "exit\r"
+expect "(config-router)#"
+
+# Neighbor Spine-4
+set n4_ip [expr {($ss_num - 1) * 8 + 7}]
+send "neighbor 10.1.1.$n4_ip\r"
+expect "(config-router-neighbor)#"
+send "remote-as 65004\r"
+expect "(config-router-neighbor)#"
+send "description Spine-4\r"
+expect "(config-router-neighbor)#"
+send "address-family ipv4 unicast\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "address-family l2vpn evpn\r"
+expect "(config-router-neighbor-af)#"
+send "send-community extended\r"
+expect "(config-router-neighbor-af)#"
+send "route-map UNCHANGED out\r"
+expect "(config-router-neighbor-af)#"
+send "exit\r"
+expect "(config-router-neighbor)#"
+send "exit\r"
+expect "(config-router)#"
+
+send "exit\r"
+expect "(config)#"
+
+send "end\r"
+expect "#"
+
+send "copy run start\r"
+expect {
+    "Copy complete" { }
+    -re "\\?" { send "\r" }
+}
+sleep 3
+expect "#"
+
+puts "\n=== Super-Spine-$ss_num configured! ==="
+send "exit\r"
+expect eof
