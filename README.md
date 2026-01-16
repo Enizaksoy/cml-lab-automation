@@ -142,6 +142,12 @@ To add sessions to MobaXterm programmatically:
 3. Add bookmark sections (see [MobaXterm Setup Guide](docs/mobaxterm_setup.md))
 4. Reopen MobaXterm
 
+### Result: Sessions Created in MobaXterm
+
+![MobaXterm Sessions](images/mobaxterm_sessions.jpg)
+
+*All lab devices organized in a single folder for easy access*
+
 ## Using with AI Tools
 
 This workflow was created using Claude (AI assistant). To replicate for your own lab:
