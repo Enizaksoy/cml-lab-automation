@@ -1,0 +1,296 @@
+<mxfile host="app.diagrams.net" modified="2026-01-18T00:00:00.000Z" agent="Claude AI" version="21.0.0">
+  <diagram name="EVPN Multi-Site Topology" id="evpn-multisite">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;Multi-Site EVPN VXLAN Fabric&lt;/b&gt;&lt;br&gt;5-Stage Clos Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="550" y="20" width="300" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Super-Spine Layer Box -->
+        <mxCell id="ss-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;dashed=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="480" y="70" width="440" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss-label" value="&lt;b&gt;SUPER-SPINE LAYER&lt;/b&gt;&lt;br&gt;AS 65000" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontColor=#7F6000;" vertex="1" parent="1">
+          <mxGeometry x="630" y="75" width="140" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Super-Spine-1 -->
+        <mxCell id="ss1" value="&lt;b&gt;Super-Spine-1&lt;/b&gt;&lt;br&gt;AS 65000&lt;br&gt;10.0.0.1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="520" y="105" width="120" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Super-Spine-2 -->
+        <mxCell id="ss2" value="&lt;b&gt;Super-Spine-2&lt;/b&gt;&lt;br&gt;AS 65000&lt;br&gt;10.0.0.2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="760" y="105" width="120" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 1 Box -->
+        <mxCell id="pod1-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;dashed=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="560" height="480" as="geometry"/>
+        </mxCell>
+        <mxCell id="pod1-label" value="&lt;b&gt;POD 1&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=14;fontColor=#1a3d5c;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="280" y="205" width="80" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 2 Box -->
+        <mxCell id="pod2-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;dashed=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="800" y="200" width="320" height="480" as="geometry"/>
+        </mxCell>
+        <mxCell id="pod2-label" value="&lt;b&gt;POD 2&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=14;fontColor=#2d5a1d;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="920" y="205" width="80" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 1 Spines -->
+        <mxCell id="spine1" value="&lt;b&gt;Spine-1&lt;/b&gt;&lt;br&gt;AS 65001&lt;br&gt;10.2.1.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="250" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine2" value="&lt;b&gt;Spine-2&lt;/b&gt;&lt;br&gt;AS 65002&lt;br&gt;10.2.2.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="190" y="250" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine3" value="&lt;b&gt;Spine-3&lt;/b&gt;&lt;br&gt;AS 65003&lt;br&gt;10.2.3.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="320" y="250" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine4" value="&lt;b&gt;Spine-4&lt;/b&gt;&lt;br&gt;AS 65004&lt;br&gt;10.2.4.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="450" y="250" width="100" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 2 Spines -->
+        <mxCell id="spine5" value="&lt;b&gt;Spine-5&lt;/b&gt;&lt;br&gt;AS 65005&lt;br&gt;10.2.5.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="840" y="250" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine6" value="&lt;b&gt;Spine-6&lt;/b&gt;&lt;br&gt;AS 65006&lt;br&gt;10.2.6.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="980" y="250" width="100" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 1 Leafs -->
+        <mxCell id="leaf1" value="&lt;b&gt;Leaf-1&lt;/b&gt;&lt;br&gt;AS 65101&lt;br&gt;VTEP: 10.0.2.1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="380" width="100" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf2" value="&lt;b&gt;Leaf-2&lt;/b&gt;&lt;br&gt;AS 65102&lt;br&gt;VTEP: 10.0.2.2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="190" y="380" width="100" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf3" value="&lt;b&gt;Leaf-3&lt;/b&gt;&lt;br&gt;AS 65103&lt;br&gt;VTEP: 10.0.2.3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="320" y="380" width="100" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf4" value="&lt;b&gt;Leaf-4&lt;/b&gt;&lt;br&gt;AS 65104&lt;br&gt;VTEP: 10.0.2.4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="450" y="380" width="100" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 2 Leafs -->
+        <mxCell id="leaf5" value="&lt;b&gt;Leaf-5&lt;/b&gt;&lt;br&gt;AS 65105&lt;br&gt;VTEP: 10.0.2.5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="840" y="380" width="100" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf6" value="&lt;b&gt;Leaf-6&lt;/b&gt;&lt;br&gt;AS 65106&lt;br&gt;VTEP: 10.0.2.6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="980" y="380" width="100" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 1 IOSvL2 -->
+        <mxCell id="iosvl2-0" value="&lt;b&gt;iosvl2-0&lt;/b&gt;&lt;br&gt;Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="70" y="510" width="80" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="iosvl2-1" value="&lt;b&gt;iosvl2-1&lt;/b&gt;&lt;br&gt;Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="200" y="510" width="80" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="iosvl2-2" value="&lt;b&gt;iosvl2-2&lt;/b&gt;&lt;br&gt;Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="330" y="510" width="80" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="iosvl2-3" value="&lt;b&gt;iosvl2-3&lt;/b&gt;&lt;br&gt;Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="460" y="510" width="80" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- POD 2 IOSvL2 -->
+        <mxCell id="iosvl2-4" value="&lt;b&gt;iosvl2-4&lt;/b&gt;&lt;br&gt;Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="850" y="510" width="80" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="iosvl2-5" value="&lt;b&gt;iosvl2-5&lt;/b&gt;&lt;br&gt;Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="990" y="510" width="80" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- VLANs Legend Box -->
+        <mxCell id="vlan-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;opacity=50;" vertex="1" parent="1">
+          <mxGeometry x="40" y="590" width="560" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="vlan-title" value="&lt;b&gt;L2VNI / VLANs&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="50" y="595" width="100" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="vlan-info" value="VLAN 10 (VNI 10010) - Data&lt;br&gt;VLAN 20 (VNI 10020) - Voice&lt;br&gt;VLAN 30 (VNI 10030) - Mgmt&lt;br&gt;VLAN 40 (VNI 10040) - Guest" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="50" y="615" width="150" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="l3vni-info" value="&lt;b&gt;L3VNI:&lt;/b&gt; 50000&lt;br&gt;&lt;b&gt;VRF:&lt;/b&gt; mylab&lt;br&gt;&lt;b&gt;Anycast GW:&lt;/b&gt; 192.168.x.1&lt;br&gt;&lt;b&gt;Anycast MAC:&lt;/b&gt; 0000.1111.2222" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="220" y="600" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="status-info" value="&lt;b&gt;Status (Jan 17, 2026):&lt;/b&gt;&lt;br&gt;✅ Cross-POD NVE Peering WORKING&lt;br&gt;✅ All 6 Spines → Super-Spines&lt;br&gt;✅ BGP IPv4 + L2VPN EVPN UP" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="410" y="600" width="180" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Super-Spine to POD1 Spines Links -->
+        <mxCell id="ss1-spine1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss1" target="spine1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss1-spine2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss1" target="spine2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss1-spine3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss1" target="spine3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss1-spine4" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss1" target="spine4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss2-spine1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss2" target="spine1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss2-spine2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss2" target="spine2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss2-spine3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss2" target="spine3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss2-spine4" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="ss2" target="spine4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Super-Spine to POD2 Spines Links -->
+        <mxCell id="ss1-spine5" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="ss1" target="spine5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss1-spine6" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="ss1" target="spine6">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss2-spine5" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="ss2" target="spine5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ss2-spine6" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="ss2" target="spine6">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- POD1 Spine to Leaf Links -->
+        <mxCell id="spine1-leaf1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine1" target="leaf1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine1-leaf2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine1" target="leaf2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine1-leaf3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine1" target="leaf3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine1-leaf4" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine1" target="leaf4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine2-leaf1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine2" target="leaf1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine2-leaf2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine2" target="leaf2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine2-leaf3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine2" target="leaf3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine2-leaf4" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine2" target="leaf4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine3-leaf1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine3" target="leaf1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine3-leaf2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine3" target="leaf2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine3-leaf3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine3" target="leaf3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine3-leaf4" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine3" target="leaf4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine4-leaf1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine4" target="leaf1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine4-leaf2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine4" target="leaf2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine4-leaf3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine4" target="leaf3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine4-leaf4" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="spine4" target="leaf4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- POD2 Spine to Leaf Links -->
+        <mxCell id="spine5-leaf5" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="spine5" target="leaf5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine5-leaf6" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="spine5" target="leaf6">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine6-leaf5" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="spine6" target="leaf5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="spine6-leaf6" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="spine6" target="leaf6">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Leaf to IOSvL2 Links -->
+        <mxCell id="leaf1-iosvl2-0" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=1;dashed=1;" edge="1" parent="1" source="leaf1" target="iosvl2-0">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf2-iosvl2-1" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=1;dashed=1;" edge="1" parent="1" source="leaf2" target="iosvl2-1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf3-iosvl2-2" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=1;dashed=1;" edge="1" parent="1" source="leaf3" target="iosvl2-2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf4-iosvl2-3" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=1;dashed=1;" edge="1" parent="1" source="leaf4" target="iosvl2-3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf5-iosvl2-4" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=1;dashed=1;" edge="1" parent="1" source="leaf5" target="iosvl2-4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="leaf6-iosvl2-5" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=1;dashed=1;" edge="1" parent="1" source="leaf6" target="iosvl2-5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- VXLAN Tunnel Overlay (Cross-POD) -->
+        <mxCell id="vxlan-tunnel" value="" style="edgeStyle=none;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=2;dashed=1;dashPattern=8 8;curved=1;" edge="1" parent="1" source="leaf1" target="leaf5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="450" y="450"/>
+              <mxPoint x="700" y="430"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vxlan-label" value="&lt;font color=&quot;#ff0000&quot;&gt;&lt;b&gt;VXLAN Tunnel (Cross-POD NVE)&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="540" y="440" width="170" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="800" y="590" width="320" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="810" y="595" width="60" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-ss" value="Super-Spine (AS 65000)" style="text;html=1;strokeColor=none;fillColor=#fff2cc;align=left;fontSize=9;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="810" y="612" width="140" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-spine" value="Spine (AS 65001-65006)" style="text;html=1;strokeColor=none;fillColor=#dae8fc;align=left;fontSize=9;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="810" y="629" width="140" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-leaf" value="Leaf/VTEP (AS 65101-65106)" style="text;html=1;strokeColor=none;fillColor=#e1d5e7;align=left;fontSize=9;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="810" y="646" width="150" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-access" value="IOSvL2 Access" style="text;html=1;strokeColor=none;fillColor=#f5f5f5;align=left;fontSize=9;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="970" y="612" width="90" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-vxlan" value="&lt;font color=&quot;#ff0000&quot;&gt;── VXLAN Tunnel&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="970" y="629" width="100" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-underlay" value="── Underlay Links" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="970" y="646" width="100" height="15" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
