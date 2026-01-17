@@ -174,9 +174,9 @@ interface Vlan40
 |-----------|-------|-------|--------|
 | Leaf-to-Spine BGP | 4 spines | 2 spines | ✅ Working |
 | VXLAN NVE VNIs | 5 VNIs Up | 5 VNIs Up | ✅ Working |
-| VXLAN NVE Peers | 5 peers | 1 peer | ✅ Working |
-| Super-Spine BGP | 4 spines connected | - | ✅ **FIXED** |
-| Spine-to-Super-Spine | 2 Super-Spines | - | ✅ **FIXED** |
+| **Cross-POD NVE Peers** | **Sees Leaf-5/6** | **Sees Leaf-1/2/3/4** | ✅ **WORKING** |
+| Super-Spine BGP (EVPN) | 6 spines | 6 spines | ✅ **WORKING** |
+| Super-Spine BGP (IPv4) | 6 spines | 6 spines | ✅ **WORKING** |
 | IOSvL2 VLANs | Configured | Configured | ✅ Working |
 | IOSvL2 Trunks | Configured | Configured | ✅ Working |
 | IOSvL2 Gateways | Configured | Configured | ✅ Working |
@@ -194,15 +194,26 @@ nve1      10040    UnicastBGP        Up    CP   L2 [40]       ✅
 nve1      50000    n/a               Up    CP   L3 [mylab]    ✅
 ```
 
-#### Leaf-1 NVE Peers (VXLAN Tunnels) - ✅ 5 PEERS UP
+#### Leaf-1 NVE Peers (VXLAN Tunnels) - ✅ CROSS-POD WORKING!
 ```
 Leaf-1# show nve peers
 Interface Peer-IP          State LearnType Uptime   Router-Mac
-nve1      10.0.2.2         Up    CP        00:23:44 52b6.6784.1b08  (Leaf-2) ✅
-nve1      10.0.2.3         Up    CP        00:23:44 52c0.6d7c.1b08  (Leaf-3) ✅
-nve1      10.0.2.4         Up    CP        00:23:44 521e.a310.1b08  (Leaf-4) ✅
-nve1      10.1.1.3         Up    CP        00:00:07 n/a             ✅
-nve1      10.2.2.5         Up    CP        00:00:07 n/a             ✅
+nve1      10.0.2.2         Up    CP        00:15:13 52b6.6784.1b08  (Leaf-2) ✅
+nve1      10.0.2.3         Up    CP        00:55:39 52c0.6d7c.1b08  (Leaf-3) ✅
+nve1      10.0.2.4         Up    CP        00:55:39 521e.a310.1b08  (Leaf-4) ✅
+nve1      10.0.2.5         Up    CP        00:05:29 n/a             (Leaf-5 POD2) ✅ CROSS-POD!
+nve1      10.0.2.6         Up    CP        00:05:29 n/a             (Leaf-6 POD2) ✅ CROSS-POD!
+```
+
+#### Leaf-5 NVE Peers (POD2) - ✅ SEES POD1 LEAFS!
+```
+Leaf-5# show nve peers
+Interface Peer-IP          State LearnType Uptime   Router-Mac
+nve1      10.0.2.1         Up    CP        00:04:05 n/a             (Leaf-1 POD1) ✅ CROSS-POD!
+nve1      10.0.2.2         Up    CP        00:04:05 n/a             (Leaf-2 POD1) ✅ CROSS-POD!
+nve1      10.0.2.3         Up    CP        00:04:05 n/a             (Leaf-3 POD1) ✅ CROSS-POD!
+nve1      10.0.2.4         Up    CP        00:04:05 n/a             (Leaf-4 POD1) ✅ CROSS-POD!
+nve1      10.0.2.6         Up    CP        07:29:54 5227.4721.1b08  (Leaf-6) ✅
 ```
 
 #### Leaf-1 BGP EVPN Summary - ✅ ALL 4 SPINES UP
@@ -264,18 +275,35 @@ Neighbor        V    AS    MsgRcvd    MsgSent   TblVer  InQ OutQ Up/Down  State/
 10.2.1.7        4 65104          0          0        0    0    0 09:56:29 Idle  (Leaf-4) ⚠️
 ```
 
-#### Super-Spine-1 BGP EVPN Summary - ✅ ALL 4 POD1 SPINES UP
+#### Super-Spine-1 BGP EVPN Summary - ✅ ALL 6 SPINES UP (POD1 + POD2)
 ```
 Super-Spine-1# show bgp l2vpn evpn summary
 BGP router identifier 10.0.0.1, local AS number 65000
-BGP table version is 1265, L2VPN EVPN config peers 4, capable peers 4
-35 network entries and 140 paths using 23660 bytes of memory
+BGP table version is 3210, L2VPN EVPN config peers 6, capable peers 6
+64 network entries and 214 paths using 38896 bytes of memory
 
 Neighbor        V    AS    MsgRcvd    MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
-10.1.1.1        4 65001        407        163     1265    0    0 00:07:23 35  (Spine-1) ✅
-10.1.1.3        4 65002        506        163     1265    0    0 00:07:53 35  (Spine-2) ✅
-10.1.1.5        4 65003        547        173     1265    0    0 00:07:38 35  (Spine-3) ✅
-10.1.1.7        4 65004        533        159     1265    0    0 00:07:50 35  (Spine-4) ✅
+10.1.1.1        4 65001       1200        375     3210    0    0 00:35:26 43  (Spine-1) ✅
+10.1.1.3        4 65002       1326        358     3210    0    0 00:35:57 43  (Spine-2) ✅
+10.1.1.5        4 65003       1524        361     3210    0    0 00:35:42 43  (Spine-3) ✅
+10.1.1.7        4 65004       1420        351     3210    0    0 00:35:53 43  (Spine-4) ✅
+10.1.1.9        4 65005        190         88     3210    0    0 00:07:55 21  (Spine-5 POD2) ✅ NEW!
+10.1.1.11       4 65006        233         87     3210    0    0 00:06:54 21  (Spine-6 POD2) ✅ NEW!
+```
+
+#### Super-Spine-1 BGP IPv4 Unicast (Underlay) - ✅ ALL 6 SPINES UP
+```
+Super-Spine-1# show bgp ipv4 unicast summary
+BGP router identifier 10.0.0.1, local AS number 65000
+BGP table version is 260, IPv4 Unicast config peers 6, capable peers 6
+
+Neighbor        V    AS    MsgRcvd    MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+10.1.1.1        4 65001       1200        375      260    0    0 00:35:26 26  (Spine-1) ✅
+10.1.1.3        4 65002       1326        358      260    0    0 00:35:57 26  (Spine-2) ✅
+10.1.1.5        4 65003       1524        361      260    0    0 00:35:42 27  (Spine-3) ✅
+10.1.1.7        4 65004       1420        351      260    0    0 00:35:53 26  (Spine-4) ✅
+10.1.1.9        4 65005        190         88      260    0    0 00:07:55 11  (Spine-5 POD2) ✅ NEW!
+10.1.1.11       4 65006        233         87      260    0    0 00:06:54 11  (Spine-6 POD2) ✅ NEW!
 ```
 
 #### Leaf-5 (POD 2) NVE VNI Status - ✅ ALL UP
@@ -326,22 +354,79 @@ Neighbor        V    AS    State/PfxRcd
 
 ### Known Issues & Next Steps
 
-#### ✅ Issue 1: Super-Spine BGP (FIXED - Jan 17, 2026)
-- **Status:** ✅ **RESOLVED** - Super-Spine to Spine BGP sessions now UP
-- **Solution:** Underlay connectivity fixed between Super-Spines and POD1 Spines
-- **Current State:**
-  - Super-Spine-1: 4 spine neighbors UP (35 prefixes each)
-  - Super-Spine-2: Connected to POD1 Spines
-  - Spine-1: Both Super-Spines UP (34+17 prefixes)
-- **Verification:**
-  ```
-  Super-Spine-1# show bgp l2vpn evpn summary
-  Neighbor        V    AS    State/PfxRcd
-  10.1.1.1        4 65001   35  (Spine-1) ✅
-  10.1.1.3        4 65002   35  (Spine-2) ✅
-  10.1.1.5        4 65003   35  (Spine-3) ✅
-  10.1.1.7        4 65004   35  (Spine-4) ✅
-  ```
+#### ✅ Issue 1: Super-Spine to POD2 Connectivity (FIXED - Jan 17, 2026)
+- **Status:** ✅ **RESOLVED** - All 6 Spines (POD1 + POD2) now connected to Super-Spines
+- **Problem:** POD2 Spines had no BGP to Super-Spines (missing underlay + overlay)
+- **Solution:** Added interface config + BGP IPv4 unicast + L2VPN EVPN for POD2 neighbors
+- **Configuration Applied:**
+
+**Super-Spine-1:**
+```
+interface Ethernet1/5
+  description To Spine-5
+  ip address 10.1.1.8/31
+interface Ethernet1/6
+  description To Spine-6
+  ip address 10.1.1.10/31
+
+router bgp 65000
+  neighbor 10.1.1.9 (Spine-5)
+    remote-as 65005
+    address-family ipv4 unicast
+    address-family l2vpn evpn
+      send-community extended
+      route-map UNCHANGED out
+  neighbor 10.1.1.11 (Spine-6)
+    remote-as 65006
+    address-family ipv4 unicast
+    address-family l2vpn evpn
+      send-community extended
+      route-map UNCHANGED out
+```
+
+**Super-Spine-2:**
+```
+interface Ethernet1/5
+  ip address 10.1.1.12/31   → Spine-5
+interface Ethernet1/6
+  ip address 10.1.1.14/31   → Spine-6
+
+router bgp 65000
+  neighbor 10.1.1.13 / 10.1.1.15 (same config as SS-1)
+```
+
+**Spine-5:**
+```
+interface Ethernet1/3
+  ip address 10.1.1.9/31    → Super-Spine-1
+interface Ethernet1/4
+  ip address 10.1.1.13/31   → Super-Spine-2
+
+router bgp 65005
+  address-family ipv4 unicast
+    redistribute direct route-map PERMIT-ALL
+  neighbor 10.1.1.8 (Super-Spine-1)
+    remote-as 65000
+    address-family ipv4 unicast
+    address-family l2vpn evpn
+      send-community extended
+  neighbor 10.1.1.12 (Super-Spine-2)
+    remote-as 65000
+    address-family ipv4 unicast
+    address-family l2vpn evpn
+      send-community extended
+```
+
+**Spine-6:**
+```
+interface Ethernet1/3
+  ip address 10.1.1.11/31   → Super-Spine-1
+interface Ethernet1/4
+  ip address 10.1.1.15/31   → Super-Spine-2
+
+router bgp 65006
+  (same config as Spine-5)
+```
 
 #### ✅ Issue 2: IOSvL2 Trunks (FIXED)
 - **Status:** Configured on iosvl2-0, iosvl2-1, iosvl2-4, iosvl2-5

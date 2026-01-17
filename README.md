@@ -18,11 +18,11 @@ This repository contains a fully documented implementation of:
 
 | Component | POD 1 | POD 2 | Status |
 |-----------|-------|-------|--------|
-| Leaf-to-Spine BGP | 4 Spines (25 pfx each) | 2 Spines (8 pfx each) | ✅ Working |
+| Leaf-to-Spine BGP | 4 Spines | 2 Spines | ✅ Working |
 | VXLAN NVE VNIs | 5 VNIs Up | 5 VNIs Up | ✅ Working |
-| VXLAN NVE Peers | 5 Peers | 1 Peer | ✅ Working |
-| Super-Spine BGP | 4 Spines (35 pfx each) | - | ✅ **FIXED** |
-| Spine-to-Super-Spine | 2 SS (34+17 pfx) | - | ✅ **FIXED** |
+| **Cross-POD NVE Peers** | **Sees POD2 Leafs** | **Sees POD1 Leafs** | ✅ **WORKING** |
+| Super-Spine BGP (EVPN) | 6 Spines connected | 6 Spines connected | ✅ **WORKING** |
+| Super-Spine BGP (IPv4) | 6 Spines (underlay) | 6 Spines (underlay) | ✅ **WORKING** |
 | IOSvL2 Trunks | Configured | Configured | ✅ Working |
 
 ## Lab Topology
@@ -107,35 +107,41 @@ This repository contains a fully documented implementation of:
 ### Verified Working (January 17, 2026)
 
 ```
-Leaf-1# show nve vni
-Interface VNI      Multicast-group   State Mode Type [BD/VRF]
-nve1      10010    UnicastBGP        Up    CP   L2 [10]       ✅
-nve1      10020    UnicastBGP        Up    CP   L2 [20]       ✅
-nve1      10030    UnicastBGP        Up    CP   L2 [30]       ✅
-nve1      10040    UnicastBGP        Up    CP   L2 [40]       ✅
-nve1      50000    n/a               Up    CP   L3 [mylab]    ✅
+### Cross-POD NVE Peering - WORKING! ###
 
-Leaf-1# show nve peers  (5 VXLAN tunnel peers!)
-Interface Peer-IP          State LearnType Uptime   Router-Mac
-nve1      10.0.2.2         Up    CP        00:23:44 52b6.6784.1b08  (Leaf-2) ✅
-nve1      10.0.2.3         Up    CP        00:23:44 52c0.6d7c.1b08  (Leaf-3) ✅
-nve1      10.0.2.4         Up    CP        00:23:44 521e.a310.1b08  (Leaf-4) ✅
-nve1      10.1.1.3         Up    CP        00:00:07 n/a             ✅
-nve1      10.2.2.5         Up    CP        00:00:07 n/a             ✅
+Leaf-1# show nve peers  (Now sees POD2 Leafs!)
+Interface Peer-IP          State LearnType Router-Mac
+nve1      10.0.2.2         Up    CP        52b6.6784.1b08  (Leaf-2) ✅
+nve1      10.0.2.3         Up    CP        52c0.6d7c.1b08  (Leaf-3) ✅
+nve1      10.0.2.4         Up    CP        521e.a310.1b08  (Leaf-4) ✅
+nve1      10.0.2.5         Up    CP        n/a             (Leaf-5 POD2) ✅ CROSS-POD!
+nve1      10.0.2.6         Up    CP        n/a             (Leaf-6 POD2) ✅ CROSS-POD!
 
-Leaf-1# show bgp l2vpn evpn summary (25 prefixes from each spine!)
+Leaf-5# show nve peers  (POD2 now sees POD1 Leafs!)
+Interface Peer-IP          State LearnType Router-Mac
+nve1      10.0.2.1         Up    CP        n/a             (Leaf-1 POD1) ✅ CROSS-POD!
+nve1      10.0.2.2         Up    CP        n/a             (Leaf-2 POD1) ✅ CROSS-POD!
+nve1      10.0.2.3         Up    CP        n/a             (Leaf-3 POD1) ✅ CROSS-POD!
+nve1      10.0.2.4         Up    CP        n/a             (Leaf-4 POD1) ✅ CROSS-POD!
+nve1      10.0.2.6         Up    CP        5227.4721.1b08  (Leaf-6) ✅
+
+Super-Spine-1# show bgp l2vpn evpn summary (ALL 6 SPINES UP!)
 Neighbor        V    AS    State/PfxRcd
-10.2.1.0        4 65001   25  (Spine-1) ✅
-10.2.2.0        4 65002   25  (Spine-2) ✅
-10.2.3.0        4 65003   25  (Spine-3) ✅
-10.2.4.0        4 65004   25  (Spine-4) ✅
+10.1.1.1        4 65001   43  (Spine-1) ✅
+10.1.1.3        4 65002   43  (Spine-2) ✅
+10.1.1.5        4 65003   43  (Spine-3) ✅
+10.1.1.7        4 65004   43  (Spine-4) ✅
+10.1.1.9        4 65005   21  (Spine-5 POD2) ✅ NEW!
+10.1.1.11       4 65006   21  (Spine-6 POD2) ✅ NEW!
 
-Super-Spine-1# show bgp l2vpn evpn summary (ALL SPINES UP!)
+Super-Spine-1# show bgp ipv4 unicast summary (Underlay - ALL 6 SPINES!)
 Neighbor        V    AS    State/PfxRcd
-10.1.1.1        4 65001   35  (Spine-1) ✅
-10.1.1.3        4 65002   35  (Spine-2) ✅
-10.1.1.5        4 65003   35  (Spine-3) ✅
-10.1.1.7        4 65004   35  (Spine-4) ✅
+10.1.1.1        4 65001   26  (Spine-1) ✅
+10.1.1.3        4 65002   26  (Spine-2) ✅
+10.1.1.5        4 65003   27  (Spine-3) ✅
+10.1.1.7        4 65004   26  (Spine-4) ✅
+10.1.1.9        4 65005   11  (Spine-5 POD2) ✅ NEW!
+10.1.1.11       4 65006   11  (Spine-6 POD2) ✅ NEW!
 ```
 
 ## Quick Start
@@ -212,10 +218,29 @@ cisco-multi-site-evpn-implementation/
 
 | Issue | Status | Description |
 |-------|--------|-------------|
-| Super-Spine BGP | ✅ **FIXED** | All 4 POD1 Spines connected to Super-Spine-1/2 with 35 prefixes each |
-| Cross-POD Traffic | ✅ **Working** | EVPN routes now exchanging via Super-Spines |
+| Super-Spine to POD2 | ✅ **FIXED** | All 6 Spines (POD1 + POD2) connected to Super-Spines |
+| Cross-POD NVE Peers | ✅ **WORKING** | Leaf-1 sees Leaf-5/6, Leaf-5 sees Leaf-1/2/3/4 |
+| Underlay IPv4 BGP | ✅ **WORKING** | VTEP loopbacks now reachable across PODs |
 | Leaf-4 BGP | ⚠️ Idle | Leaf-4 to Spine-1 showing Idle - needs investigation |
-| IOSvL2-2, IOSvL2-3 Trunks | 📝 Todo | Need trunk configuration on G0/1 |
+| IOSvL2 ARP Duplicate | ⚠️ Warning | iosvl2-0 sending anycast GW back - check STP/trunk |
+
+## Super-Spine to POD2 Configuration (Added)
+
+```
+# Super-Spine-1 to POD2
+interface Ethernet1/5
+  ip address 10.1.1.8/31    → Spine-5
+interface Ethernet1/6
+  ip address 10.1.1.10/31   → Spine-6
+
+router bgp 65000
+  neighbor 10.1.1.9 (Spine-5)
+    address-family ipv4 unicast    ← Underlay
+    address-family l2vpn evpn      ← Overlay
+  neighbor 10.1.1.11 (Spine-6)
+    address-family ipv4 unicast
+    address-family l2vpn evpn
+```
 
 ## Using with AI Tools
 
