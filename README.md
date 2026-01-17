@@ -2,7 +2,7 @@
 
 A complete **BGP EVPN VXLAN Multi-Site Data Center Fabric** implementation using Cisco CML and AI-assisted automation. This project demonstrates a production-ready 5-stage Clos topology with 2 PODs interconnected via Super-Spines.
 
-![Lab Topology](images/cml_topology.png)
+![Lab Topology](images/cml_topology.jpg)
 
 ## Overview
 
