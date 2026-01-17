@@ -1,265 +1,224 @@
-# Cisco CML Lab Automation with AI
+# Cisco Multi-Site EVPN Implementation
 
-Automate Cisco Modeling Labs (CML) device configuration using AI tools (Claude). This project demonstrates how to programmatically configure NX-OS 9000v switches in a **BGP EVPN VXLAN** spine-leaf topology.
+A complete **BGP EVPN VXLAN Multi-Site Data Center Fabric** implementation using Cisco CML and AI-assisted automation. This project demonstrates a production-ready 5-stage Clos topology with 2 PODs interconnected via Super-Spines.
 
 ![Lab Topology](images/cml_topology.jpg)
 
 ## Overview
 
-This repository contains scripts and documentation for:
-- Accessing Cisco CML via API and console
-- Automated NX-OS device configuration (hostname, management IP, SSH, users)
-- **BGP EVPN VXLAN fabric configuration** (3-tier Clos topology)
-- MobaXterm session management
-- Expect scripts for bulk device provisioning
+This repository contains a fully documented implementation of:
+- **Multi-Site VXLAN EVPN Fabric** with 2 PODs
+- **5-Stage Clos Architecture** (Super-Spine / Spine / Leaf / Access)
+- **20 Network Devices** (14 NX-OS 9000v + 6 IOSvL2)
+- **eBGP EVPN Overlay** with unique AS per device
+- **Anycast Gateway** for distributed default gateway
+- **AI-Assisted Configuration** using Claude
+
+## Current Lab Status (January 2026)
+
+| Component | POD 1 | POD 2 | Status |
+|-----------|-------|-------|--------|
+| Leaf-to-Spine BGP | 4 Spines | 2 Spines | ✅ Working |
+| VXLAN NVE VNIs | 5 VNIs Up | 5 VNIs Up | ✅ Working |
+| VXLAN NVE Peers | 3 Peers | 1 Peer | ✅ Working |
+| IOSvL2 Trunks | Configured | Configured | ✅ Working |
+| Super-Spine BGP | - | - | ⚠️ Underlay Fix Needed |
 
 ## Lab Topology
 
-**Architecture:** 3-Tier Clos (Super-Spine / Spine / Leaf)
+### Architecture: 5-Stage Clos (Multi-Site)
 
-| Device | Role | Management IP | BGP AS |
-|--------|------|---------------|--------|
-| Super-Spine-1 | Route Reflector | 192.168.30.118 | 65000 |
-| Super-Spine-2 | Route Reflector | 192.168.30.119 | 65000 |
-| Spine-1 | Aggregation | 192.168.30.110 | 65001 |
-| Spine-2 | Aggregation | 192.168.30.111 | 65002 |
-| Spine-3 | Aggregation | 192.168.30.112 | 65003 |
-| Spine-4 | Aggregation | 192.168.30.113 | 65004 |
-| Leaf-1 | VTEP | 192.168.30.114 | 65101 |
-| Leaf-2 | VTEP | 192.168.30.115 | 65102 |
-| Leaf-3 | VTEP | 192.168.30.116 | 65103 |
-| Leaf-4 | VTEP | 192.168.30.117 | 65104 |
+```
+                    ┌─────────────────────────────────────┐
+                    │         SUPER-SPINE LAYER           │
+                    │   Super-Spine-1    Super-Spine-2    │
+                    │    (AS 65000)       (AS 65000)      │
+                    └───────────┬─────────────┬───────────┘
+                                │             │
+           ┌────────────────────┴─────────────┴────────────────────┐
+           │                                                        │
+    ┌──────┴──────┐                                          ┌──────┴──────┐
+    │    POD 1    │                                          │    POD 2    │
+    ├─────────────┤                                          ├─────────────┤
+    │ Spine 1-4   │                                          │ Spine 5-6   │
+    │ Leaf 1-4    │                                          │ Leaf 5-6    │
+    │ iosvl2 0-3  │                                          │ iosvl2 4-5  │
+    └─────────────┘                                          └─────────────┘
+```
+
+### Complete Device Inventory
+
+#### NX-OS 9000v Devices (VXLAN EVPN Fabric)
+
+| Device | Role | Management IP | BGP AS | Loopback0 (VTEP) |
+|--------|------|---------------|--------|------------------|
+| **Super-Spine Layer** |||||
+| Super-Spine-1 | Super Spine | 192.168.30.118/24 | 65000 | 10.0.0.1 |
+| Super-Spine-2 | Super Spine | 192.168.30.119/24 | 65000 | 10.0.0.2 |
+| **POD 1 - Spine Layer** |||||
+| Spine-1 | Spine | 192.168.30.110/24 | 65001 | 10.2.1.0 |
+| Spine-2 | Spine | 192.168.30.111/24 | 65002 | 10.2.2.0 |
+| Spine-3 | Spine | 192.168.30.112/24 | 65003 | 10.2.3.0 |
+| Spine-4 | Spine | 192.168.30.113/24 | 65004 | 10.2.4.0 |
+| **POD 1 - Leaf Layer** |||||
+| Leaf-1 | Leaf/VTEP | 192.168.30.114/24 | 65101 | 10.0.2.1 |
+| Leaf-2 | Leaf/VTEP | 192.168.30.115/24 | 65102 | 10.0.2.2 |
+| Leaf-3 | Leaf/VTEP | 192.168.30.116/24 | 65103 | 10.0.2.3 |
+| Leaf-4 | Leaf/VTEP | 192.168.30.117/24 | 65104 | 10.0.2.4 |
+| **POD 2 - Spine Layer** |||||
+| Spine-5 | Spine | 192.168.30.122/24 | 65005 | 10.2.5.0 |
+| Spine-6 | Spine | 192.168.30.123/24 | 65006 | 10.2.6.0 |
+| **POD 2 - Leaf Layer** |||||
+| Leaf-5 | Leaf/VTEP | 192.168.30.120/24 | 65105 | 10.0.2.5 |
+| Leaf-6 | Leaf/VTEP | 192.168.30.121/24 | 65106 | 10.0.2.6 |
+
+#### IOSvL2 Access Switches
+
+| Device | Role | Management IP | Connected To | VLANs |
+|--------|------|---------------|--------------|-------|
+| iosvl2-0 | Access Switch | 192.168.30.130/24 | Leaf-1 | 10, 20, 40 |
+| iosvl2-1 | Access Switch | 192.168.30.131/24 | Leaf-2 | 10, 20, 40 |
+| iosvl2-2 | Access Switch | 192.168.30.132/24 | Leaf-3 | 10, 20, 40 |
+| iosvl2-3 | Access Switch | 192.168.30.133/24 | Leaf-4 | 10, 20, 40 |
+| iosvl2-4 | Access Switch | 192.168.30.134/24 | Leaf-5 | 10, 20, 40 |
+| iosvl2-5 | Access Switch | 192.168.30.135/24 | Leaf-6 | 10, 20, 40 |
 
 ## BGP EVPN VXLAN Design
 
-### IP Addressing Scheme
-
-| Network | Range | Purpose |
-|---------|-------|---------|
-| Super-Spine Loopbacks | 10.0.0.x/32 | BGP Router-ID |
-| Spine Loopbacks | 10.0.1.x/32 | BGP Router-ID |
-| Leaf Loopbacks | 10.0.2.x/32 | BGP Router-ID & VTEP Source |
-| SS-Spine Links | 10.1.1.x/31 | Point-to-Point |
-| Spine-Leaf Links | 10.2.x.y/31 | Point-to-Point |
-| VLAN 10 | 192.168.10.0/24 | Data Network |
-| VLAN 20 | 192.168.20.0/24 | Voice Network |
-| VLAN 30 | 192.168.30.0/24 | Management Network |
-| VLAN 40 | 192.168.40.0/24 | Guest Network |
-
 ### VNI Mapping
 
-| VLAN | VNI | Purpose |
-|------|-----|---------|
-| 10 | 10010 | Data (L2VNI) |
-| 20 | 10020 | Voice (L2VNI) |
-| 30 | 10030 | Management (L2VNI) |
-| 40 | 10040 | Guest (L2VNI) |
-| 100 | 50000 | VRF mylab (L3VNI) |
+| VLAN | Name | VNI | Type | Purpose |
+|------|------|-----|------|---------|
+| 10 | VLAN10_Data | 10010 | L2VNI | Data traffic |
+| 20 | VLAN20_Voice | 10020 | L2VNI | Voice traffic |
+| 30 | VLAN30_Management | 10030 | L2VNI | Management |
+| 40 | VLAN40_Guest | 10040 | L2VNI | Guest access |
+| 100 | L3VNI_mylab | 50000 | L3VNI | VRF inter-VLAN routing |
 
 ### Key Features
 
-- **eBGP Underlay:** Unique ASN per device for multipath
-- **eBGP EVPN Overlay:** L2VPN EVPN address-family
-- **Anycast Gateway:** Same IP (192.168.x.1) and MAC (0000.1111.2222) on all Leafs
-- **VRF:** `mylab` with L3VNI for inter-VLAN routing
-- **Ingress Replication:** BGP-based for BUM traffic
+- **eBGP EVPN Overlay:** Unique ASN per device for optimal multipath
+- **Anycast Gateway:** Same IP (192.168.x.1) and MAC on all Leafs
+- **VRF:** `mylab` with L3VNI 50000 for inter-VLAN routing
+- **Ingress Replication:** BGP-based for BUM traffic (no multicast)
+- **Multi-Site:** POD isolation with Super-Spine interconnect
+
+### Verified Working (January 17, 2026)
+
+```
+Leaf-1# show nve vni
+Interface VNI      Multicast-group   State Mode Type [BD/VRF]
+nve1      10010    UnicastBGP        Up    CP   L2 [10]       ✅
+nve1      10020    UnicastBGP        Up    CP   L2 [20]       ✅
+nve1      10030    UnicastBGP        Up    CP   L2 [30]       ✅
+nve1      10040    UnicastBGP        Up    CP   L2 [40]       ✅
+nve1      50000    n/a               Up    CP   L3 [mylab]    ✅
+
+Leaf-1# show nve peers
+Interface Peer-IP          State LearnType Uptime   Router-Mac
+nve1      10.0.2.2         Up    CP        07:42:28 52b6.6784.1b08  (Leaf-2) ✅
+nve1      10.0.2.3         Up    CP        07:41:52 52c0.6d7c.1b08  (Leaf-3) ✅
+nve1      10.0.2.4         Up    CP        07:41:44 521e.a310.1b08  (Leaf-4) ✅
+
+Leaf-1# show bgp l2vpn evpn summary
+Neighbor        V    AS    State/PfxRcd
+10.2.1.0        4 65001   16  (Spine-1) ✅
+10.2.2.0        4 65002   16  (Spine-2) ✅
+10.2.3.0        4 65003   16  (Spine-3) ✅
+10.2.4.0        4 65004   24  (Spine-4) ✅
+```
 
 ## Quick Start
 
 ### Prerequisites
 - Cisco CML 2.x installed and running
 - `expect` package installed (`apt install expect`)
-- GitHub CLI (`gh`) for repository management
-- MobaXterm (optional, for Windows SSH client)
+- SSH access to CML server
 
-### 1. Clone Repository
+### SSH Access
+
 ```bash
-git clone https://github.com/Enizaksoy/cml-lab-automation.git
-cd cml-lab-automation
+# NX-OS devices
+ssh admin@192.168.30.114
+# Password: Versa@123!!
+
+# IOSvL2 devices (require legacy SSH)
+ssh -o KexAlgorithms=+diffie-hellman-group14-sha1 \
+    -o HostKeyAlgorithms=+ssh-rsa \
+    admin@192.168.30.130
 ```
 
-### 2. Apply BGP EVPN VXLAN Configuration
+### Verification Commands
 
 ```bash
-# Configure Super-Spines
-./scripts/config_superspine.exp 192.168.30.118 1
-./scripts/config_superspine.exp 192.168.30.119 2
-
-# Configure Spines
-./scripts/config_spine.exp 192.168.30.110 1
-./scripts/config_spine.exp 192.168.30.111 2
-./scripts/config_spine.exp 192.168.30.112 3
-./scripts/config_spine.exp 192.168.30.113 4
-
-# Configure Leafs
-./scripts/config_leaf.exp 192.168.30.114 1
-./scripts/config_leaf.exp 192.168.30.115 2
-./scripts/config_leaf.exp 192.168.30.116 3
-./scripts/config_leaf.exp 192.168.30.117 4
-```
-
-### 3. Verify Configuration
-```bash
-# On any device
-show bgp l2vpn evpn summary
-show nve peers
+# VXLAN Status
 show nve vni
+show nve peers
 show vxlan
+
+# BGP EVPN
+show bgp l2vpn evpn summary
+show bgp l2vpn evpn
+
+# MAC/ARP Tables
+show l2route evpn mac all
+show ip arp vrf mylab
 ```
 
 ## Project Structure
 
 ```
-cml-lab-automation/
-├── README.md
+cisco-multi-site-evpn-implementation/
+├── README.md                    # This file
 ├── images/
-│   ├── cml_topology.jpg
-│   └── mobaxterm_sessions.jpg
+│   ├── cml_topology.jpg         # Lab topology screenshot
+│   └── mobaxterm_sessions.jpg   # MobaXterm setup
 ├── scripts/
-│   ├── config_superspine.exp    # Super-Spine BGP EVPN config
-│   ├── config_spine.exp         # Spine BGP EVPN config
-│   └── config_leaf.exp          # Leaf VTEP/VXLAN config
+│   ├── config_superspine.exp    # Super-Spine automation
+│   ├── config_spine.exp         # Spine automation
+│   └── config_leaf.exp          # Leaf VTEP automation
 ├── configs/
 │   ├── 00_design_overview.md    # Design documentation
-│   ├── Super-Spine-1.cfg        # Super-Spine-1 configuration
-│   ├── Super-Spine-2.cfg        # Super-Spine-2 configuration
-│   ├── Spine-1.cfg              # Spine-1 configuration
-│   ├── Spine-2.cfg              # Spine-2 configuration
-│   ├── Spine-3.cfg              # Spine-3 configuration
-│   ├── Spine-4.cfg              # Spine-4 configuration
-│   ├── Leaf-1.cfg               # Leaf-1 configuration
-│   ├── Leaf-2.cfg               # Leaf-2 configuration
-│   ├── Leaf-3.cfg               # Leaf-3 configuration
-│   └── Leaf-4.cfg               # Leaf-4 configuration
+│   ├── Super-Spine-*.cfg        # Super-Spine configs
+│   ├── Spine-*.cfg              # Spine configs
+│   └── Leaf-*.cfg               # Leaf configs
 ├── verification/
-│   └── BGP_EVPN_VXLAN_Verification.md  # Show command outputs
+│   └── BGP_EVPN_VXLAN_Verification.md
 └── docs/
-    └── mobaxterm_setup.md       # MobaXterm configuration guide
+    └── cisco-cml-lab.md         # Complete lab documentation
 ```
 
-## Configuration Verification
+## Documentation
 
-### Super-Spine-1 BGP Configuration
-```
-Super-Spine-1# show running-config bgp
+📖 **[Complete Lab Documentation](docs/cisco-cml-lab.md)** - Full details including:
+- Device configurations
+- VXLAN EVPN verification outputs
+- IOSvL2 access switch setup
+- Troubleshooting commands
+- MobaXterm session setup
+- Expect automation scripts
 
-router bgp 65000
-  router-id 10.0.0.1
-  bestpath as-path multipath-relax
-  address-family l2vpn evpn
-    retain route-target all
-  neighbor 10.1.1.1
-    remote-as 65001
-    description Spine-1
-    address-family l2vpn evpn
-      send-community extended
-      route-map UNCHANGED out
-```
+## Known Issues & Next Steps
 
-### Leaf-1 VXLAN Configuration
-```
-Leaf-1# show nve vni
-
-Interface VNI      Multicast-group   State Mode Type [BD/VRF]
---------- -------- ----------------- ----- ---- ------------------
-nve1      10010    UnicastBGP        Down  CP   L2 [10]
-nve1      10020    UnicastBGP        Down  CP   L2 [20]
-nve1      10030    UnicastBGP        Down  CP   L2 [30]
-nve1      10040    UnicastBGP        Down  CP   L2 [40]
-nve1      50000    n/a               Down  CP   L3 [mylab]
-```
-
-### Leaf-1 VLAN to VNI Mapping
-```
-Leaf-1# show vxlan
-
-Vlan            VN-Segment
-====            ==========
-10              10010
-20              10020
-30              10030
-40              10040
-100             50000
-```
-
-> **Note:** VNI state shows "Down" because physical links are not yet connected in CML. Once links are created, BGP will establish and VNIs will come up.
-
-## CML Topology Links Required
-
-### Super-Spine to Spine
-| From | Interface | To | Interface |
-|------|-----------|-----|-----------|
-| Super-Spine-1 | E1/1 | Spine-1 | E1/5 |
-| Super-Spine-1 | E1/2 | Spine-2 | E1/5 |
-| Super-Spine-1 | E1/3 | Spine-3 | E1/5 |
-| Super-Spine-1 | E1/4 | Spine-4 | E1/5 |
-| Super-Spine-2 | E1/1 | Spine-1 | E1/6 |
-| Super-Spine-2 | E1/2 | Spine-2 | E1/6 |
-| Super-Spine-2 | E1/3 | Spine-3 | E1/6 |
-| Super-Spine-2 | E1/4 | Spine-4 | E1/6 |
-
-### Spine to Leaf
-| From | Interface | To | Interface |
-|------|-----------|-----|-----------|
-| Spine-X | E1/1 | Leaf-1 | E1/X |
-| Spine-X | E1/2 | Leaf-2 | E1/X |
-| Spine-X | E1/3 | Leaf-3 | E1/X |
-| Spine-X | E1/4 | Leaf-4 | E1/X |
-
-## MobaXterm Integration
-
-To add sessions to MobaXterm programmatically:
-
-1. **Close MobaXterm**
-2. Edit `%APPDATA%\MobaXterm\MobaXterm.ini`
-3. Add bookmark sections (see [MobaXterm Setup Guide](docs/mobaxterm_setup.md))
-4. Reopen MobaXterm
-
-### Result: Sessions Created in MobaXterm
-
-![MobaXterm Sessions](images/mobaxterm_sessions.jpg)
-
-*All lab devices organized in a single folder for easy access*
+| Issue | Status | Description |
+|-------|--------|-------------|
+| Super-Spine BGP Idle | ⚠️ Pending | Underlay connectivity between Super-Spines and Spines needs fix in CML |
+| Cross-POD Traffic | ⚠️ Blocked | Requires Super-Spine fix for inter-POD EVPN route exchange |
+| IOSvL2-2, IOSvL2-3 Trunks | 📝 Todo | Need trunk configuration on G0/1 |
 
 ## Using with AI Tools
 
-This workflow was created using Claude (AI assistant). To replicate for your own lab:
+This implementation was created using **Claude AI**. To replicate:
 
-### Provide This Information:
 ```
-1. CML Server: IP, username, password
-2. Lab Name: Name of your CML lab
-3. IP Range: Management IPs for devices (e.g., 192.168.30.110-120)
-4. Gateway: Default gateway for management VRF
-5. Device Credentials: Username/password to create on devices
-6. Fabric Design: VRF name, VLANs, anycast gateway IPs
-```
-
-### Example AI Prompt:
-```
-Configure my CML lab "VXLAN_MANUAL" with BGP EVPN VXLAN:
-- 2 Super-Spines, 4 Spines, 4 Leafs
+Configure my CML lab with Multi-Site BGP EVPN VXLAN:
+- 2 Super-Spines (AS 65000) for inter-POD connectivity
+- POD 1: 4 Spines (AS 65001-65004), 4 Leafs (AS 65101-65104)
+- POD 2: 2 Spines (AS 65005-65006), 2 Leafs (AS 65105-65106)
+- 6 IOSvL2 access switches
 - VRF "mylab" with VLANs 10, 20, 30, 40
 - Anycast gateway on leaf switches
-- eBGP underlay with unique ASN per device
 ```
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| BGP neighbors in Idle state | Verify physical links are connected in CML topology |
-| Cannot SSH to device | Verify device is BOOTED in CML, check `show ip int brief vrf management` |
-| NVE VNI showing Down | BGP neighbors not established, check underlay connectivity |
-| EVPN routes missing | Verify `nv overlay evpn` feature is enabled |
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-topology`)
-3. Commit changes (`git commit -am 'Add new topology support'`)
-4. Push to branch (`git push origin feature/new-topology`)
-5. Open a Pull Request
 
 ## License
 
@@ -267,8 +226,8 @@ MIT License - feel free to use and modify for your own labs.
 
 ## Author
 
-Created by [Enizaksoy](https://github.com/Enizaksoy) using Claude AI for network automation.
+Created by [Enizaksoy](https://github.com/Enizaksoy) using **Claude AI** for network automation.
 
 ---
 
-**Keywords:** Cisco CML, Network Automation, NX-OS, VXLAN EVPN, BGP, Spine-Leaf, Anycast Gateway, VTEP, Infrastructure as Code, AI-Assisted Automation
+**Keywords:** Cisco CML, Multi-Site EVPN, VXLAN, BGP, 5-Stage Clos, Spine-Leaf, NX-OS 9000v, IOSvL2, Anycast Gateway, Data Center Fabric, AI-Assisted Automation
